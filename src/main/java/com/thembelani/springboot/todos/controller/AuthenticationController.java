@@ -1,6 +1,6 @@
 package com.thembelani.springboot.todos.controller;
 
-import com.thembelani.springboot.todos.request.AuthenticationService;
+import com.thembelani.springboot.todos.service.AuthenticationService;
 import com.thembelani.springboot.todos.request.RegisterRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
