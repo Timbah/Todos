@@ -1,6 +1,7 @@
 package com.thembelani.springboot.todos.controller;
 
 import com.thembelani.springboot.todos.entity.User;
+import com.thembelani.springboot.todos.response.UserResponse;
 import com.thembelani.springboot.todos.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +20,7 @@ public class UserController {
     }
 
     @GetMapping("/info")
-    public User getUserInfo(){
+    public UserResponse getUserInfo(){
         return userService.getUserInfo();
     }
 }
