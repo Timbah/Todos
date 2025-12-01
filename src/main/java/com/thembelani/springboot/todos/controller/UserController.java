@@ -4,6 +4,7 @@ import com.thembelani.springboot.todos.entity.User;
 import com.thembelani.springboot.todos.response.UserResponse;
 import com.thembelani.springboot.todos.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,5 +23,10 @@ public class UserController {
     @GetMapping("/info")
     public UserResponse getUserInfo(){
         return userService.getUserInfo();
+    }
+
+    @DeleteMapping()
+    public void deleteUser(){
+        userService.deleteUser();
     }
 }
