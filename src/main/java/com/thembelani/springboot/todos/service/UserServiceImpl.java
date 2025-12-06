@@ -4,9 +4,11 @@ package com.thembelani.springboot.todos.service;
 import com.thembelani.springboot.todos.entity.Authority;
 import com.thembelani.springboot.todos.entity.User;
 import com.thembelani.springboot.todos.repository.UserRepository;
+import com.thembelani.springboot.todos.request.PasswordUpdateRequest;
 import com.thembelani.springboot.todos.response.UserResponse;
 import com.thembelani.springboot.todos.util.FindAuthenticatedUser;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,10 +18,12 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final FindAuthenticatedUser findAuthenticatedUser;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, FindAuthenticatedUser findAuthenticatedUser) {
+    public UserServiceImpl(UserRepository userRepository, FindAuthenticatedUser findAuthenticatedUser, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.findAuthenticatedUser = findAuthenticatedUser;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -27,7 +31,7 @@ public class UserServiceImpl implements UserService {
     public UserResponse getUserInfo() {
 
 
-        User user =  findAuthenticatedUser.getAuthenticatedUser();
+        User user = findAuthenticatedUser.getAuthenticatedUser();
 
         return new UserResponse(
                 user.getId(),
@@ -40,24 +44,61 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser() {
 
-        User user =  findAuthenticatedUser.getAuthenticatedUser();
+        User user = findAuthenticatedUser.getAuthenticatedUser();
 
         //Check to make sure that this is not the last admin in the database
-        if(isLastAdmin(user)){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Admin cannot delete itself");
+        if (isLastAdmin(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin cannot delete itself");
         }
 
         userRepository.delete(user);
     }
 
-    private boolean isLastAdmin(User user){
+
+    @Override
+    @Transactional
+    public void updatePassword(PasswordUpdateRequest passwordUpdateRequest) {
+
+        User user = findAuthenticatedUser.getAuthenticatedUser();
+
+        if (!isOldPasswordCorrect(user.getPassword(), passwordUpdateRequest.getOldPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+
+        if (!isNewPasswordConfirmed(passwordUpdateRequest.getNewPassword(),
+                passwordUpdateRequest.getNewPassword2())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New passwords do not match");
+        }
+
+        if(!isNewPasswordDifferent(passwordUpdateRequest.getOldPassword(),passwordUpdateRequest.getNewPassword())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Old and new password must be different");
+        }
+
+        user.setPassword(passwordEncoder.encode(passwordUpdateRequest.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    private boolean isOldPasswordCorrect(String currentPassword, String oldPassword) {
+        return passwordEncoder.matches(oldPassword, currentPassword);
+    }
+
+    private boolean isNewPasswordConfirmed(String newPassword, String newPasswordConfirmation) {
+        return newPassword.equals(newPasswordConfirmation);
+    }
+
+    private boolean isNewPasswordDifferent(String oldPassword, String newPassword){
+        return !oldPassword.equals(newPassword);
+    }
+
+
+    private boolean isLastAdmin(User user) {
         boolean isAdmin = user.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
 
-        if(isAdmin){
+        if (isAdmin) {
             //Check if this is not the last admin
             long adminCount = userRepository.countAdminUsers();
-            return adminCount <=1;
+            return adminCount <= 1;
         }
         return false;
     }
