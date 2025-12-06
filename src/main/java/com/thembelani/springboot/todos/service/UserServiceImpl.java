@@ -5,6 +5,7 @@ import com.thembelani.springboot.todos.entity.Authority;
 import com.thembelani.springboot.todos.entity.User;
 import com.thembelani.springboot.todos.repository.UserRepository;
 import com.thembelani.springboot.todos.response.UserResponse;
+import com.thembelani.springboot.todos.util.FindAuthenticatedUser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,23 +19,20 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final FindAuthenticatedUser findAuthenticatedUser;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, FindAuthenticatedUser findAuthenticatedUser) {
         this.userRepository = userRepository;
+        this.findAuthenticatedUser = findAuthenticatedUser;
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserResponse getUserInfo() {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated() ||
-                authentication.getPrincipal().equals("anonymousUser")) {
-            throw new AccessDeniedException("Authentication required");
-        }
+        User user =  findAuthenticatedUser.getAuthenticatedUser();
 
-        User user =  (User) authentication.getPrincipal();
         return new UserResponse(
                 user.getId(),
                 user.getFirstName() + " " + user.getLastName(),
@@ -46,14 +44,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser() {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated() ||
-                authentication.getPrincipal().equals("anonymousUser")) {
-            throw new AccessDeniedException("Authentication required");
-        }
-
-        User user =  (User) authentication.getPrincipal();
+        User user =  findAuthenticatedUser.getAuthenticatedUser();
 
         //Check to make sure that this is not the last admin in the database
         if(isLastAdmin(user)){
