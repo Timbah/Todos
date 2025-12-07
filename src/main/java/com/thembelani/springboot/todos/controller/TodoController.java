@@ -24,7 +24,7 @@ public class TodoController {
     }
 
 
-    @Operation(summary = "Get all todos for user",description = "Fetch all todos from signed-in user")
+    @Operation(summary = "Get all todos for user", description = "Fetch all todos from signed-in user")
     @ResponseStatus(HttpStatus.OK)
     @GetMapping
     public List<TodoResponse> getAllTodos(){
